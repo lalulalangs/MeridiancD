@@ -61,7 +61,7 @@
   "maxTokens": 4096,
   "maxSteps": 20,
   "managementModel": "deepseek-v4-flash",
-  "screeningModel": "deepseek-v4-pro",
+  "screeningModel": "deepseek-v4-flash",
   "generalModel": "deepseek-v4-flash",
   "darwinEnabled": true,
   "darwinWindowDays": 60,
