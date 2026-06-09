@@ -26,6 +26,7 @@
   "maxBinStep": 125,
   "minFeeActiveTvlRatio": 0.2,
   "minTokenFeesSol": 30,
+
   "useDiscordSignals": false,
   "discordSignalMode": "merge",
   "avoidPvpSymbols": true,
@@ -38,6 +39,7 @@
   "minTokenAgeHours": 2,
   "maxTokenAgeHours": 72,
   "athFilterPct": 30,
+
   "minClaimAmount": 2,
   "autoSwapAfterClaim": true,
   "outOfRangeBinsToClose": 10,
@@ -57,12 +59,14 @@
   "managementIntervalMin": 10,
   "screeningIntervalMin": 30,
   "healthCheckIntervalMin": 60,
-  "temperature": 0.373,
+
+  "temperature": 0.1,
   "maxTokens": 4096,
   "maxSteps": 20,
   "managementModel": "deepseek-v4-flash",
   "screeningModel": "deepseek-v4-flash",
   "generalModel": "deepseek-v4-flash",
+
   "darwinEnabled": true,
   "darwinWindowDays": 60,
   "darwinRecalcEvery": 5,
@@ -71,6 +75,7 @@
   "darwinFloor": 0.3,
   "darwinCeiling": 2.5,
   "darwinMinSamples": 10,
+  
   "agentId": "agt_0b1953102f637ab9d8e3dad7",
   "publicApiKey": "",
   "agentMeridianApiUrl": "https://api.agentmeridian.xyz/api",
