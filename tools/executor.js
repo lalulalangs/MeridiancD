@@ -371,6 +371,7 @@ const toolMap = {
       maxTokenAgeHours: ["screening", "maxTokenAgeHours"],
       minFeePerTvl24h: ["management", "minFeePerTvl24h"],
       exitStrategy: ["management", "exitStrategy"],
+      evilPandaTimeframe: ["management", "evilPandaTimeframe"],
       disableScreening: ["management", "disableScreening"],
       loneCandidateMinDegen: ["screening", "loneCandidateMinDegen"],
       // management

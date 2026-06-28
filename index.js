@@ -270,7 +270,10 @@ export async function runManagementCycle({ silent = false } = {}) {
         if (exitMap.has(p.position)) continue;
         if (!p.pool) continue;
         try {
-          const overbought = await checkEvilPandaOverboughtFromMeteora(p.pool);
+          const overbought = await checkEvilPandaOverboughtFromMeteora(p.pool, {
+            timeframe: config.management.evilPandaTimeframe || "5m",
+            ohlcvLimit: 100,
+          });
           if (overbought.confirmed) {
             exitMap.set(p.position, overbought.reason);
             log("state", `Evil Panda overbought exit for ${p.pair}: ${overbought.reason}`);

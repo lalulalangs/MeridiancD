@@ -103,6 +103,7 @@ export const config = {
   // ─── Position Management ────────────────
   management: {
     exitStrategy:          u.exitStrategy          ?? "default", // "default" | "evil_panda"
+    evilPandaTimeframe:    u.evilPandaTimeframe    ?? "5m", // OHLCV timeframe for evil panda overbought check
     disableScreening:      u.disableScreening      ?? false, // true = management-only mode, no new positions
     minClaimAmount:        u.minClaimAmount        ?? 5,
     autoSwapAfterClaim:    u.autoSwapAfterClaim    ?? false,

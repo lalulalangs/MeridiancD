@@ -56,7 +56,7 @@
   "trailingDropPct": 1.5,
   "pnlSanityMaxDiffPct": 5,
   "solMode": true,
-  "managementIntervalMin": 10,
+  "managementIntervalMin": 15,
   "screeningIntervalMin": 30,
   "healthCheckIntervalMin": 60,
 
