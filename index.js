@@ -971,13 +971,6 @@ function getDeterministicCloseRule(position, managementConfig) {
     ) {
       return { action: "CLOSE", rule: 2, reason: "evil panda OOR right (price above position)" };
     }
-    if (
-      position.active_bin != null &&
-      position.lower_bin != null &&
-      position.active_bin < position.lower_bin
-    ) {
-      return { action: "CLOSE", rule: 3, reason: "evil panda OOR left (price below position)" };
-    }
     return null;
   }
 
