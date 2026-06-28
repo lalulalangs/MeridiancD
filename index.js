@@ -34,7 +34,6 @@ import { stageSignals } from "./signal-tracker.js";
 import { getWeightsSummary } from "./signal-weights.js";
 import { bootstrapHiveMind, ensureAgentId, getHiveMindPullMode, isHiveMindEnabled, pullHiveMindLessons, pullHiveMindPresets, registerHiveMindAgent, startHiveMindBackgroundSync } from "./hivemind.js";
 import { appendDecision } from "./decision-log.js";
-import { checkEvilPandaOverbought } from "./tools/chart-indicators.js";
 import { checkEvilPandaOverboughtFromMeteora } from "./tools/evil-panda-indicators.js";
 
 import { REPO_ROOT, repoPath } from "./repo-root.js";
