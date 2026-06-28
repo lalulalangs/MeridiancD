@@ -93,6 +93,7 @@ export const config = {
   // ─── Position Management ────────────────
   management: {
     exitStrategy:          u.exitStrategy          ?? "default", // "default" | "evil_panda"
+    disableScreening:      u.disableScreening      ?? false, // true = management-only mode, no new positions
     minClaimAmount:        u.minClaimAmount        ?? 5,
     autoSwapAfterClaim:    u.autoSwapAfterClaim    ?? false,
     outOfRangeBinsToClose: u.outOfRangeBinsToClose ?? 10,

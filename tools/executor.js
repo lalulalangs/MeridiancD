@@ -363,6 +363,7 @@ const toolMap = {
       athFilterPct:     ["screening", "athFilterPct"],
       minFeePerTvl24h: ["management", "minFeePerTvl24h"],
       exitStrategy: ["management", "exitStrategy"],
+      disableScreening: ["management", "disableScreening"],
       // management
       minClaimAmount: ["management", "minClaimAmount"],
       autoSwapAfterClaim: ["management", "autoSwapAfterClaim"],

@@ -215,9 +215,11 @@ export async function runManagementCycle({ silent = false } = {}) {
     positions = livePositions?.positions || [];
 
     if (positions.length === 0) {
-      log("cron", "No open positions — triggering screening cycle");
-      mgmtReport = "No open positions. Triggering screening cycle.";
-      runScreeningCycle().catch((e) => log("cron_error", `Triggered screening failed: ${e.message}`));
+      log("cron", `No open positions${config.management.disableScreening ? " — screening disabled" : " — triggering screening cycle"}`);
+      mgmtReport = config.management.disableScreening ? "All positions closed — no screening." : "No open positions. Triggering screening cycle.";
+      if (!config.management.disableScreening) {
+        runScreeningCycle().catch((e) => log("cron_error", `Triggered screening failed: ${e.message}`));
+      }
       return mgmtReport;
     }
 
@@ -370,11 +372,13 @@ After executing, write a brief one-line result per position.
     }
 
     // Trigger screening after management
-    const afterPositions = await getMyPositions({ force: true }).catch(() => null);
-    const afterCount = afterPositions?.positions?.length ?? 0;
-    if (afterCount < config.risk.maxPositions && Date.now() - _screeningLastTriggered > screeningCooldownMs) {
-      log("cron", `Post-management: ${afterCount}/${config.risk.maxPositions} positions — triggering screening`);
-      runScreeningCycle().catch((e) => log("cron_error", `Triggered screening failed: ${e.message}`));
+    if (!config.management.disableScreening) {
+      const afterPositions = await getMyPositions({ force: true }).catch(() => null);
+      const afterCount = afterPositions?.positions?.length ?? 0;
+      if (afterCount < config.risk.maxPositions && Date.now() - _screeningLastTriggered > screeningCooldownMs) {
+        log("cron", `Post-management: ${afterCount}/${config.risk.maxPositions} positions — triggering screening`);
+        runScreeningCycle().catch((e) => log("cron_error", `Triggered screening failed: ${e.message}`));
+      }
     }
   } catch (error) {
     log("cron_error", `Management cycle failed: ${error.message}`);
@@ -397,6 +401,10 @@ After executing, write a brief one-line result per position.
 }
 
 export async function runScreeningCycle({ silent = false } = {}) {
+  if (config.management.disableScreening) {
+    log("cron", "Screening disabled — management-only mode");
+    return null;
+  }
   if (_screeningBusy) {
     log("cron", "Screening skipped — previous cycle still running");
     return null;
@@ -754,7 +762,9 @@ export function startCronJobs() {
     await runManagementCycle();
   });
 
-  const screenTask = cron.schedule(`*/${Math.max(1, config.schedule.screeningIntervalMin)} * * * *`, runScreeningCycle);
+  const screenTask = config.management.disableScreening
+    ? null
+    : cron.schedule(`*/${Math.max(1, config.schedule.screeningIntervalMin)} * * * *`, runScreeningCycle);
 
   const healthTask = cron.schedule(`0 * * * *`, async () => {
     if (_managementBusy) return;
@@ -838,10 +848,10 @@ Summarize the current portfolio health, total fees earned, and performance of al
     }
   }, 30_000);
 
-  _cronTasks = [mgmtTask, screenTask, healthTask, briefingTask, briefingWatchdog];
+  _cronTasks = [mgmtTask, screenTask, healthTask, briefingTask, briefingWatchdog].filter(Boolean);
   // Store interval ref so stopCronJobs can clear it
   _cronTasks._pnlPollInterval = pnlPollInterval;
-  log("cron", `Cycles started — management every ${config.schedule.managementIntervalMin}m, screening every ${config.schedule.screeningIntervalMin}m`);
+  log("cron", `Cycles started — management every ${config.schedule.managementIntervalMin}m${config.management.disableScreening ? ", screening disabled" : `, screening every ${config.schedule.screeningIntervalMin}m`}`);
 }
 
 // ═══════════════════════════════════════════
@@ -1038,7 +1048,7 @@ function formatConfigSnapshot() {
     `OOR: ${config.management.outOfRangeWaitMinutes}m | cooldown ${config.management.oorCooldownTriggerCount}x / ${config.management.oorCooldownHours}h`,
     `Repeat deploy cooldown: ${config.management.repeatDeployCooldownEnabled ? "on" : "off"} | ${config.management.repeatDeployCooldownTriggerCount}x / ${config.management.repeatDeployCooldownHours}h | min fee earned ${config.management.repeatDeployCooldownMinFeeEarnedPct}% | ${config.management.repeatDeployCooldownScope}`,
     `Yield floor: ${config.management.minFeePerTvl24h}% | min age ${config.management.minAgeBeforeYieldCheck}m`,
-    `Screening: ${config.screening.category} / ${config.screening.timeframe} | TVL ${config.screening.minTvl}-${config.screening.maxTvl}`,
+    `Screening: ${config.management.disableScreening ? "DISABLED" : `${config.screening.category} / ${config.screening.timeframe} | TVL ${config.screening.minTvl}-${config.screening.maxTvl}`}`,
     `Intervals: manage ${config.schedule.managementIntervalMin}m | screen ${config.schedule.screeningIntervalMin}m`,
     `HiveMind: ${isHiveMindEnabled() ? "enabled" : "disabled"}${config.hiveMind.agentId ? ` | ${config.hiveMind.agentId}` : ""}`,
   ].join("\n");
@@ -1060,6 +1070,7 @@ function settingValue(key) {
   const values = {
     solMode: config.management.solMode,
     lpAgentRelayEnabled: config.api.lpAgentRelayEnabled,
+    disableScreening: config.management.disableScreening,
     chartIndicatorsEnabled: config.indicators.enabled,
     trailingTakeProfit: config.management.trailingTakeProfit,
     useDiscordSignals: config.screening.useDiscordSignals,
@@ -1154,6 +1165,7 @@ function renderSettingsMenu(page = "main") {
       [toggleButton("trailingTakeProfit", "Trailing TP")],
       stepButtons("trailingTriggerPct", "Trail trigger", 0.5, { digits: 1 }),
       stepButtons("trailingDropPct", "Trail drop", 0.5, { digits: 1 }),
+      [toggleButton("disableScreening", "No screening")],
       [toggleButton("repeatDeployCooldownEnabled", "Repeat cooldown")],
       stepButtons("repeatDeployCooldownTriggerCount", "Repeat count", 1, { digits: 0 }),
       stepButtons("repeatDeployCooldownHours", "Repeat hrs", 1, { digits: 0 }),
@@ -2047,6 +2059,10 @@ Focus on: hold duration, entry/exit timing, what win rates look like, whether sc
   maybeRunMissedBriefing().catch(() => { });
   startPolling(telegramHandler);
   (async () => {
+    if (config.management.disableScreening) {
+      log("startup", "Screening disabled — skipping initial screening cycle");
+      return;
+    }
     try {
       await runScreeningCycle({ silent: false });
     } catch (e) {
