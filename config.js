@@ -92,6 +92,7 @@ export const config = {
 
   // ─── Position Management ────────────────
   management: {
+    exitStrategy:          u.exitStrategy          ?? "default", // "default" | "evil_panda"
     minClaimAmount:        u.minClaimAmount        ?? 5,
     autoSwapAfterClaim:    u.autoSwapAfterClaim    ?? false,
     outOfRangeBinsToClose: u.outOfRangeBinsToClose ?? 10,

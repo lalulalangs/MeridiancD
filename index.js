@@ -34,6 +34,7 @@ import { stageSignals } from "./signal-tracker.js";
 import { getWeightsSummary } from "./signal-weights.js";
 import { bootstrapHiveMind, ensureAgentId, getHiveMindPullMode, isHiveMindEnabled, pullHiveMindLessons, pullHiveMindPresets, registerHiveMindAgent, startHiveMindBackgroundSync } from "./hivemind.js";
 import { appendDecision } from "./decision-log.js";
+import { checkEvilPandaOverbought } from "./tools/chart-indicators.js";
 
 const entrypointPath = process.env.pm_exec_path || process.argv[1];
 const isMain = entrypointPath
@@ -246,6 +247,25 @@ export async function runManagementCycle({ silent = false } = {}) {
         }
         exitMap.set(p.position, exit.reason);
         log("state", `Exit alert for ${p.pair}: ${exit.reason}`);
+      }
+    }
+
+    // ── Evil Panda technical overbought check (async) ───────────────
+    if (config.management.exitStrategy === "evil_panda") {
+      for (const p of positionData) {
+        if (exitMap.has(p.position)) continue;
+        if (!p.base_mint) continue;
+        try {
+          const overbought = await checkEvilPandaOverbought(p.base_mint);
+          if (overbought.confirmed) {
+            exitMap.set(p.position, overbought.reason);
+            log("state", `Evil Panda overbought exit for ${p.pair}: ${overbought.reason}`);
+          } else {
+            log("state", `Evil Panda overbought check for ${p.pair}: ${overbought.reason}`);
+          }
+        } catch (err) {
+          log("state", `Evil Panda overbought check failed for ${p.pair}: ${err.message}`);
+        }
       }
     }
 
@@ -904,6 +924,25 @@ function getDeterministicCloseRule(position, managementConfig) {
     return false;
   })();
 
+  // ── Evil Panda exit strategy ────────────────────────────────────
+  if (managementConfig.exitStrategy === "evil_panda") {
+    if (
+      position.active_bin != null &&
+      position.upper_bin != null &&
+      position.active_bin > position.upper_bin
+    ) {
+      return { action: "CLOSE", rule: 2, reason: "evil panda OOR right (price above position)" };
+    }
+    if (
+      position.active_bin != null &&
+      position.lower_bin != null &&
+      position.active_bin < position.lower_bin
+    ) {
+      return { action: "CLOSE", rule: 3, reason: "evil panda OOR left (price below position)" };
+    }
+    return null;
+  }
+
   if (!pnlSuspect && position.pnl_pct != null && position.pnl_pct <= managementConfig.stopLossPct) {
     return { action: "CLOSE", rule: 1, reason: "stop loss" };
   }
@@ -995,6 +1034,7 @@ function formatConfigSnapshot() {
     `Deploy: ${config.management.deployAmountSol} SOL | gasReserve: ${config.management.gasReserve} | maxPositions: ${config.risk.maxPositions}`,
     `Stop loss: ${config.management.stopLossPct}% | take profit: ${config.management.takeProfitPct}%`,
     `Trailing: ${config.management.trailingTakeProfit ? "on" : "off"} | trigger ${config.management.trailingTriggerPct}% | drop ${config.management.trailingDropPct}%`,
+    `Exit strategy: ${config.management.exitStrategy}`,
     `OOR: ${config.management.outOfRangeWaitMinutes}m | cooldown ${config.management.oorCooldownTriggerCount}x / ${config.management.oorCooldownHours}h`,
     `Repeat deploy cooldown: ${config.management.repeatDeployCooldownEnabled ? "on" : "off"} | ${config.management.repeatDeployCooldownTriggerCount}x / ${config.management.repeatDeployCooldownHours}h | min fee earned ${config.management.repeatDeployCooldownMinFeeEarnedPct}% | ${config.management.repeatDeployCooldownScope}`,
     `Yield floor: ${config.management.minFeePerTvl24h}% | min age ${config.management.minAgeBeforeYieldCheck}m`,

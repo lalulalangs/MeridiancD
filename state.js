@@ -370,7 +370,7 @@ export function getStateSummary() {
  * Returns { action, reason } or null if no exit needed.
  */
 export function updatePnlAndCheckExits(position_address, positionData, mgmtConfig) {
-  const { pnl_pct: currentPnlPct, pnl_pct_suspicious, in_range, fee_per_tvl_24h } = positionData;
+  const { pnl_pct: currentPnlPct, pnl_pct_suspicious, in_range, fee_per_tvl_24h, active_bin, lower_bin, upper_bin } = positionData;
   const state = load();
   const pos = state.positions[position_address];
   if (!pos || pos.closed) return null;
@@ -408,6 +408,35 @@ export function updatePnlAndCheckExits(position_address, positionData, mgmtConfi
   }
 
   if (changed) save(state);
+
+  // ── Evil Panda exit strategy (mutually exclusive with default below) ──
+  if (mgmtConfig.exitStrategy === "evil_panda") {
+    // Evil Panda OOR Right (Top): pool price > position max bin
+    if (in_range === false && active_bin != null && upper_bin != null && active_bin > upper_bin) {
+      return {
+        action: "EVIL_PANDA_OOR_RIGHT",
+        reason: `Evil Panda OOR Right: active_bin ${active_bin} > upper_bin ${upper_bin} (price above position)`,
+      };
+    }
+
+    // Evil Panda OOR Left (Bottom): pool price < position min bin
+    if (in_range === false && active_bin != null && lower_bin != null && active_bin < lower_bin) {
+      return {
+        action: "EVIL_PANDA_OOR_LEFT",
+        reason: `Evil Panda OOR Left: active_bin ${active_bin} < lower_bin ${lower_bin} (price below position)`,
+      };
+    }
+
+    // Fallback: OOR detected but bin data incomplete
+    if (in_range === false) {
+      return {
+        action: "EVIL_PANDA_OOR",
+        reason: `Evil Panda OOR: position reported out of range`,
+      };
+    }
+
+    return null;
+  }
 
   // ── Stop loss ──────────────────────────────────────────────────
   if (!pnl_pct_suspicious && currentPnlPct != null && mgmtConfig.stopLossPct != null && currentPnlPct <= mgmtConfig.stopLossPct) {

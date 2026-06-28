@@ -297,3 +297,35 @@ export async function confirmIndicatorPreset({
     intervals: results,
   };
 }
+
+/**
+ * Evil Panda exit strategy — technical overbought check.
+ * Returns { confirmed, reason } where confirmed is true when:
+ *   RSI(2) > 90 AND current price > Bollinger Bands Upper (20-period)
+ */
+export async function checkEvilPandaOverbought(mint) {
+  try {
+    const payload = await fetchChartIndicatorsForMint(mint, {
+      interval: "5_MINUTE",
+      rsiLength: 2,
+    });
+    const summary = buildSignalSummary(payload);
+    const { rsi, close, upperBand } = summary;
+    if (rsi != null && rsi > 90 && close != null && upperBand != null && close > upperBand) {
+      return {
+        confirmed: true,
+        reason: `Evil Panda overbought: RSI(2)=${rsi.toFixed(1)} > 90, Close=${close} > BB Upper=${upperBand}`,
+      };
+    }
+    return {
+      confirmed: false,
+      reason: `Evil Panda: RSI(2)=${rsi?.toFixed(1) ?? "?"} Close=${close ?? "?"} BB Upper=${upperBand ?? "?"}`,
+    };
+  } catch (error) {
+    return {
+      confirmed: false,
+      skipped: true,
+      reason: `Evil Panda indicator check failed: ${error.message}`,
+    };
+  }
+}
