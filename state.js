@@ -393,11 +393,12 @@ export function updatePnlAndCheckExits(position_address, positionData, mgmtConfi
         reason: `Evil Panda OOR Right: active_bin ${active_bin} > upper_bin ${upper_bin} (price above position)`,
       };
     }
-    // Fallback: OOR detected but bin data incomplete
-    if (in_range === false) {
+    // Fallback: OOR detected but bin data incomplete (can't determine left/right)
+    // Only close if we truly cannot tell direction — if we know it's not right, skip
+    if (in_range === false && (active_bin == null || upper_bin == null)) {
       return {
         action: "EVIL_PANDA_OOR",
-        reason: `Evil Panda OOR: position reported out of range`,
+        reason: `Evil Panda OOR: position reported out of range (bin data incomplete)`,
       };
     }
 
