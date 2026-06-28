@@ -842,8 +842,29 @@ Summarize the current portfolio health, total fees earned, and performance of al
         const smartTag = trigger.smart.length
           ? ` + smart wallet [${trigger.smart.map((w) => w.name || w.address?.slice(0, 4)).join(", ")}] (bar lowered ${minScore}→${floor})`
           : "";
-        log("cron", `[Opportunity] ${trigger.c.name} degen ${trigger.s.toFixed(1)} >= ${trigger.smart.length ? floor : minScore}${smartTag} — triggering screening deploy decision`);
-        runScreeningCycle({ silent: true }).catch((e) => log("cron_error", `Opportunity-triggered screening failed: ${e.message}`));
+        log("cron", `[Opportunity] ${trigger.c.name} degen ${trigger.s.toFixed(1)} >= ${trigger.smart.length ? floor : minScore}${smartTag} — ${config.opportunity.autoDeploy ? "triggering screening deploy decision" : "auto-deploy disabled, skipped"}`);
+        if (config.opportunity.autoDeploy) {
+          runScreeningCycle({ silent: true }).catch((e) => log("cron_error", `Opportunity-triggered screening failed: ${e.message}`));
+        } else {
+          // Log all passing candidates when autoDeploy is off (manual deploy mode)
+          const passing = [];
+          for (const c of candidates) {
+            const s = degenScore(c, config.opportunity);
+            if (s >= floor) {
+              const smartCheck = (s < minScore) ? (await checkSmartWalletsOnPool({ pool_address: c.pool }).catch(() => null))?.in_pool || [] : [];
+              passing.push({ name: c.name, pool: c.pool, degen: s, smart: smartCheck.map(w => w.name || w.address?.slice(0, 4)) });
+            }
+          }
+          if (passing.length > 0) {
+            const msg = `[Opportunity Poll] ${passing.length} pool(s) passed degen >= ${floor}:\n` +
+              passing.map(p => `  ${p.name} | degen ${p.degen.toFixed(1)}${p.smart.length ? ` | smart: ${p.smart.join(",")}` : ""} | pool: ${p.pool.slice(0,12)}...`).join("\n") +
+              `\nUse /deploy <address> to deploy manually.`;
+            log("cron", msg);
+            if (telegramEnabled()) {
+              sendMessage(msg).catch(() => {});
+            }
+          }
+        }
       } catch (e) {
         log("cron_error", `Opportunity poll failed: ${e.message}`);
       } finally {
@@ -1094,6 +1115,7 @@ function settingValue(key) {
     stopLossPct: config.management.stopLossPct,
     trailingTriggerPct: config.management.trailingTriggerPct,
     trailingDropPct: config.management.trailingDropPct,
+    opportunityAutoDeploy: config.opportunity.autoDeploy,
     repeatDeployCooldownEnabled: config.management.repeatDeployCooldownEnabled,
     repeatDeployCooldownTriggerCount: config.management.repeatDeployCooldownTriggerCount,
     repeatDeployCooldownHours: config.management.repeatDeployCooldownHours,
@@ -1177,6 +1199,7 @@ function renderSettingsMenu(page = "main") {
       stepButtons("repeatDeployCooldownTriggerCount", "Repeat count", 1, { digits: 0 }),
       stepButtons("repeatDeployCooldownHours", "Repeat hrs", 1, { digits: 0 }),
       stepButtons("repeatDeployCooldownMinFeeEarnedPct", "Fee earned %", 0.1, { digits: 1 }),
+      [toggleButton("opportunityAutoDeploy", "Opp auto-deploy")],
     ];
   } else if (page === "screen") {
     rows = [

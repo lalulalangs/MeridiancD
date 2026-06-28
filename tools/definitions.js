@@ -391,6 +391,7 @@ Risk: maxPositions, maxDeployAmount
 Schedule: managementIntervalMin, screeningIntervalMin
 Models: managementModel, screeningModel, generalModel
 Strategy: minBinsBelow, maxBinsBelow, defaultBinsBelow (legacy binsBelow maps to maxBinsBelow)
+Opportunity: opportunityPollEnabled, opportunityPollIntervalSec, opportunityPollLimit, opportunityMinScore, opportunitySmartWalletBonus, opportunityAutoDeploy, degenTargetVolRatio, degenTargetLpCount, degenTargetFeeRatio, degenTargetLiquidity
 
 Reason is optional but helpful — logged as a lesson when provided.`,
       parameters: {

@@ -403,6 +403,7 @@ const toolMap = {
       opportunityPollLimit: ["opportunity", "limit"],
       opportunityMinScore: ["opportunity", "minScore"],
       opportunitySmartWalletBonus: ["opportunity", "smartWalletScoreBonus"],
+      opportunityAutoDeploy: ["opportunity", "autoDeploy"],
       degenTargetVolRatio: ["opportunity", "targetVolRatio"],
       degenTargetLpCount: ["opportunity", "targetLpCount"],
       degenTargetFeeRatio: ["opportunity", "targetFeeRatio"],

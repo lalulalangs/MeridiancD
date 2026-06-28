@@ -219,6 +219,9 @@ export const config = {
     // A smart wallet (from the agentmeridian server) sitting on the pool LOWERS the
     // effective minScore by this much — a strong signal nudges a borderline pool through.
     smartWalletScoreBonus: Number(u.opportunitySmartWalletBonus ?? 20),
+    // When false, the opportunity poller reports passing pools but does NOT auto-trigger
+    // the deploy screening cycle — manual deploy via Telegram is still possible.
+    autoDeploy: u.opportunityAutoDeploy ?? true,
     // Degen Score targets (each sub-score saturates at its target). Tune to calibrate.
     // Inputs are normalized to a fixed 30m reference window, so these are timeframe-independent.
     targetVolRatio: Number(u.degenTargetVolRatio ?? 20),     // (30m) volume/active_tvl for full trading sub-score
