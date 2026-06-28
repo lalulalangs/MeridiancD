@@ -35,6 +35,7 @@ import { getWeightsSummary } from "./signal-weights.js";
 import { bootstrapHiveMind, ensureAgentId, getHiveMindPullMode, isHiveMindEnabled, pullHiveMindLessons, pullHiveMindPresets, registerHiveMindAgent, startHiveMindBackgroundSync } from "./hivemind.js";
 import { appendDecision } from "./decision-log.js";
 import { checkEvilPandaOverbought } from "./tools/chart-indicators.js";
+import { checkEvilPandaOverboughtFromMeteora } from "./tools/evil-panda-indicators.js";
 
 import { REPO_ROOT, repoPath } from "./repo-root.js";
 
@@ -268,9 +269,9 @@ export async function runManagementCycle({ silent = false } = {}) {
     if (config.management.exitStrategy === "evil_panda") {
       for (const p of positionData) {
         if (exitMap.has(p.position)) continue;
-        if (!p.base_mint) continue;
+        if (!p.pool) continue;
         try {
-          const overbought = await checkEvilPandaOverbought(p.base_mint);
+          const overbought = await checkEvilPandaOverboughtFromMeteora(p.pool);
           if (overbought.confirmed) {
             exitMap.set(p.position, overbought.reason);
             log("state", `Evil Panda overbought exit for ${p.pair}: ${overbought.reason}`);
