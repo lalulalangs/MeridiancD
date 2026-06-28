@@ -25,8 +25,6 @@ function buildSignalSummary(payload) {
   const bollinger = latest?.bollinger || {};
   const supertrend = latest?.supertrend || {};
   const fibonacciLevels = latest?.fibonacci?.levels || {};
-  const macd = latest?.macd || {};
-  const previousMacd = latest?.previousMacd || {};
   return {
     close: safeNum(candle.close),
     previousClose: safeNum(previousCandle.close),
@@ -41,8 +39,6 @@ function buildSignalSummary(payload) {
     fib50: safeNum(fibonacciLevels["0.500"]),
     fib618: safeNum(fibonacciLevels["0.618"]),
     fib786: safeNum(fibonacciLevels["0.786"]),
-    macdHistogram: safeNum(macd.histogram),
-    macdPreviousHistogram: safeNum(macd.previousHistogram ?? previousMacd.histogram),
   };
 }
 
@@ -314,28 +310,16 @@ export async function checkEvilPandaOverbought(mint) {
       rsiLength: 2,
     });
     const summary = buildSignalSummary(payload);
-    const { rsi, close, upperBand, macdHistogram, macdPreviousHistogram } = summary;
-
-    // Condition A: RSI(2) > 90 AND price > BB Upper
-    const bbOverbought = rsi != null && rsi > 90 && close != null && upperBand != null && close > upperBand;
-
-    // Condition B: RSI(2) > 90 AND MACD first green histogram (turned positive this bar)
-    const macdFirstGreen = rsi != null && rsi > 90 &&
-      macdHistogram != null && macdHistogram > 0 &&
-      macdPreviousHistogram != null && macdPreviousHistogram <= 0;
-
-    if (bbOverbought || macdFirstGreen) {
-      const reasons = [];
-      if (bbOverbought) reasons.push(`RSI(2)=${rsi.toFixed(1)} > 90, Close=${close} > BB Upper=${upperBand}`);
-      if (macdFirstGreen) reasons.push(`RSI(2)=${rsi.toFixed(1)} > 90, MACD histogram ${macdPreviousHistogram.toFixed(4)}→${macdHistogram.toFixed(4)} (first green)`);
+    const { rsi, close, upperBand } = summary;
+    if (rsi != null && rsi > 90 && close != null && upperBand != null && close > upperBand) {
       return {
         confirmed: true,
-        reason: `Evil Panda overbought: ${reasons.join(" | ")}`,
+        reason: `Evil Panda overbought: RSI(2)=${rsi.toFixed(1)} > 90, Close=${close} > BB Upper=${upperBand}`,
       };
     }
     return {
       confirmed: false,
-      reason: `Evil Panda: RSI(2)=${rsi?.toFixed(1) ?? "?"} Close=${close ?? "?"} BB Upper=${upperBand ?? "?"} MACD hist=${macdHistogram?.toFixed(4) ?? "?"}`,
+      reason: `Evil Panda: RSI(2)=${rsi?.toFixed(1) ?? "?"} Close=${close ?? "?"} BB Upper=${upperBand ?? "?"}`,
     };
   } catch (error) {
     return {
